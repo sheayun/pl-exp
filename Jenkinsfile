@@ -23,9 +23,24 @@ spec:
 
 podTemplate(label: 'jenkins-agent-sample', yaml: POD_TEMPLATE_YAML) {
     node('jenkins-agent-sample') {
-        stage ('SCM update') {
-            container('jnlp') {
-                sh "docker version"
+        stage('SCM update') {
+            checkout scm
+        }
+        stage('Docker build & push') {
+            dockerImage = docker.build "sheayun/simple-echo"
+            docker.withRegistry('https://registry.hub.docker.com',
+                'dockerhub-credentials') {
+                dockerImage.push("latest")
+            }
+        }
+        stage('Deploy on k8s cluster') {
+            withKubeConfig([credentialsId: 'KUBECONFIG',
+                serverUrl: 'https://kubernetes.default',
+                namespace: 'default']) {
+                sh '''
+                kubectl apply -f deployment.yaml
+                kubectl apply -f service.yaml
+                '''
             }
         }
     }
