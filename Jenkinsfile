@@ -15,19 +15,18 @@ pipeline {
                 image: docker:latest
                 command:
                 - /usr/local/bin/dockerd-entrypoint.sh
-                securityContext:
-                  privileged: true
                 env:
                 - name: DOCKER_TLS_CERTDIR
                   value: ""
+                securityContext:
+                  privileged: true
             '''
         }
     }
     stages {
         stage('git scm update') {
             steps {
-                git url: 'https://github.com/sheayun/pl-exp.git',
-                    branch: 'master'
+                checkout scm
             }
         }
         stage('docker build && push') {
