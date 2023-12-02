@@ -1,28 +1,31 @@
-pipeline {
-    agent any
-    stages {
-        stage('git scm update') {
-            steps {
-                git url: 'https://github.com/sheayun/pl-exp.git', branch: 'master'
-            }
-        }
-        stage('docker build && push') {
-            steps {
-                sh '''
-                docker build -t sheayun/simple-echo .
-                docker push sheayun/simple-echo
-                '''
-            }
-        }
-        stage('deploy application on kubernetes cluster') {
-            steps {
-                sh '''
-                kubectl create deployment dpy-simple-echo \
-                    --image=sheayun/simple-echo
-                kubectl expose deployment dpy-simple-echo \
-                    --name=svc-simple-echo --type=LoadBalancer \
-                    --port=30000 --target-port=80
-                '''
+POD_TEMPLATE_YAML = '''
+apiVersion: v1
+Kind: Pod
+spec:
+  containers:
+  - name: jnlp
+    image: sheayun/jnlp-agent-sample
+    command:
+    - /entrypoint.sh
+    env:
+    - name: DOCKER_HOST
+      value: "tcp://localhost:2375"
+  - name: dind
+    image: docker:latest
+    command:
+    - /usr/local/bin/dockerd-entrypoint.sh
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
+    securityContext:
+      privileged: true
+'''
+
+podTemplate(label: 'jenkins-agent-sample', yaml: POD_TEMPLATE_YAML) {
+    node('jenkins-agent-sample') {
+        stage ('SCM update') {
+            container('jnlp') {
+                sh "docker version"
             }
         }
     }
