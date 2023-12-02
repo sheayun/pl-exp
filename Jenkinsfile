@@ -1,4 +1,7 @@
 pipeline {
+    environment {
+        dockerImageName = "sheayun/simple-echo"
+    }
     agent {
         kubernetes {
             yaml '''
@@ -32,7 +35,7 @@ pipeline {
         stage('docker build && push') {
             steps {
                 script {
-                    dockerImage = docker.build "sheayun/simple-echo"
+                    dockerImage = docker.build dockerImageName
                     docker.withRegistry('https://registry.hub.docker.com',
                         'dockerhub-credentials') {
                         dockerImage.push("latest")
